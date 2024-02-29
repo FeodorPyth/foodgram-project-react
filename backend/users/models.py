@@ -13,7 +13,10 @@ class User(AbstractUser):
         max_length=150,
         blank=True,
         unique=True,
-        help_text=('Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.'),
+        help_text=(
+            'Необходимое поле. 150 символов или меньше.'
+            'Только буквы, цифры и @/./+/-/_.'
+        ),
         validators=[username_validator, validate_username_me],
         verbose_name='Имя пользователя',
     )

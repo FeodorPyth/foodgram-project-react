@@ -2,13 +2,13 @@ from django.contrib import admin
 from django.template.defaulttags import format_html
 
 from .models import (
-    Tag,
     Favourite,
     Ingredient,
     Recipe,
     RecipeIngredient,
     ShoppingCart,
     Subscriptions,
+    Tag,
 )
 
 

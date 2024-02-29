@@ -1,20 +1,22 @@
-from django_filters import rest_framework
+from django_filters.rest_framework import filters, FilterSet
 
 from recipes.models import Recipe
 
 
-class RecipeViewSetFilter(rest_framework.FilterSet):
-    is_favorited = rest_framework.BooleanFilter(
-        method='filter_is_favorited',
+class RecipeViewSetFilter(FilterSet):
+    is_favorited = filters.BooleanFilter(
+        field_name='is_favorited',
+        method='is_favorited_filter'
     )
-    author = rest_framework.NumberFilter(
+    author = filters.NumberFilter(
         field_name='author__id',
         lookup_expr='iexact',
     )
-    is_in_shopping_cart = rest_framework.BooleanFilter(
-        method='filter_is_in_shopping_cart',
+    is_in_shopping_cart = filters.BooleanFilter(
+        field_name='shopping_cart',
+        method='is_in_shopping_cart_filter',
     )
-    tags = rest_framework.CharFilter(
+    tags = filters.CharFilter(
         field_name='tags__slug',
         lookup_expr='iexact',
     )
@@ -23,15 +25,22 @@ class RecipeViewSetFilter(rest_framework.FilterSet):
         model = Recipe
         fields = (
             'author',
-            'tags'
+            'tags',
         )
 
-    def filter_is_favorited(self, queryset, name, value):
-        if value:
-            return queryset.filter(favourites__user=self.request.user)
+    def is_favorited_filter(self, queryset, name, value):
+        user = self.request.user
+        if value is not None and user.is_authenticated:
+            if value:
+                return queryset.filter(favorite_recipe__user=user)
+            else:
+                return queryset.exclude(favorite_recipe__user=user)
         return queryset
 
-    def filter_is_in_shopping_cart(self, queryset, name, value):
-        if value:
-            return queryset.filter(shopping_cart__user=self.request.user)
+    def is_in_shopping_cart_filter(self, queryset, name, value):
+        if value is not None:
+            if value:
+                return queryset.filter(shopping_cart=True)
+            else:
+                return queryset.exclude(shopping_cart=True)
         return queryset

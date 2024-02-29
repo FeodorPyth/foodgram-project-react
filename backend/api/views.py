@@ -1,45 +1,45 @@
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from djoser.serializers import SetPasswordSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
+from djoser.serializers import SetPasswordSerializer
+from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from recipes.models import (
-    Tag,
-    Recipe,
-    Ingredient,
-    RecipeIngredient,
-    Favourite,
-    ShoppingCart,
-    Subscriptions,
-)
-from users.models import User
-from .serializers import (
-    TagSerializer,
-    IngredientSerializer,
-    CustomUserCreateSerializer,
-    UserReadSerializer,
-    RecipeReadSerializer,
-    RecipeForSubscriptionsSerializer,
-    SubscriptionsSerializer,
-    RecipeCreateSerializer,
-    RecipeFavoriteSerializer,
-    RecipeShoppingCartSerializer,
-)
 from .filters import RecipeViewSetFilter
 from .pagintation import CustomPagination
+from .serializers import (
+    CustomUserCreateSerializer,
+    IngredientSerializer,
+    RecipeCreateSerializer,
+    RecipeFavoriteSerializer,
+    RecipeForSubscriptionsSerializer,
+    RecipeReadSerializer,
+    RecipeShoppingCartSerializer,
+    SubscriptionsSerializer,
+    TagSerializer,
+    UserReadSerializer,
+)
 from foodgram.settings import (
+    URL_PATH_FAVORITE,
     URL_PATH_NAME,
     URL_PATH_PASSWORD,
-    URL_PATH_SUBSCRIPTIONS,
-    URL_PATH_SUBSCRIBE,
-    URL_PATH_FAVORITE,
     URL_PATH_SHOPPING_CART,
+    URL_PATH_SUBSCRIBE,
+    URL_PATH_SUBSCRIPTIONS,
 )
+from recipes.models import (
+    Favourite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Subscriptions,
+    Tag,
+)
+from users.models import User
 
 
 class TagViewSet(ReadOnlyModelViewSet):
@@ -139,7 +139,7 @@ class UserViewSet(ModelViewSet):
                 serializer.save()
                 return Response(serializer.data,
                                 status=status.HTTP_201_CREATED)
-        if request.method == 'DELETE':        
+        if request.method == 'DELETE':
             subscription = get_object_or_404(
                 Subscriptions,
                 follower=request.user,
