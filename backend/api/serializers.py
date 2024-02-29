@@ -104,6 +104,13 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
         source='ingredient',
         queryset=Ingredient.objects.all(),
     )
+    amount = serializers.IntegerField(
+        validators=(
+            MinValueValidator(
+                1, message="Количество ингредиентов не может быть меньше 1."
+            ),
+        )
+    )
 
     class Meta:
         model = RecipeIngredient
@@ -226,21 +233,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     #         )
     #     return super().update(instance, validated_data)
 
-    # def to_representation(self, obj):
-    #     """Возвращаем прдеставление в таком же виде, как и GET-запрос."""
-    #     self.fields.pop('ingredients')
-    #     representation = super().to_representation(obj)
-    #     representation['ingredients'] = RecipeIngredientSerializer(
-    #         RecipeIngredient.objects.filter(recipe=obj).all(), many=True
-    #     ).data
-    #     return representation
-    # amount = serializers.IntegerField(
-    #     validators=(
-    #         MinValueValidator(
-    #             1, message="Количество ингредиентов не может быть меньше 1."
-    #         ),
-    #     )
-    # )
+    def to_representation(self, obj):
+        """Возвращаем прдеставление в таком же виде, как и GET-запрос."""
+        self.fields.pop('ingredients')
+        representation = super().to_representation(obj)
+        representation['ingredients'] = RecipeIngredientSerializer(
+            RecipeIngredient.objects.filter(recipe=obj).all(), many=True
+        ).data
+        return representation
 
 
 class RecipeForSubscriptionsSerializer(serializers.ModelSerializer):
