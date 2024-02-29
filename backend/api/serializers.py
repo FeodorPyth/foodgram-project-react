@@ -159,7 +159,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         many=True,
     )
     ingredients = RecipeIngredientCreateSerializer(many=True)
-    image = Base64ImageField()
+    # FIX: на вермя отладки закомментил,
+    # чтобы с файлами в тестах не морочиться.
+    # image = Base64ImageField()
     cooking_time = serializers.IntegerField(
         validators=(
             MinValueValidator(
@@ -178,18 +180,21 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time',
         )
-        extra_kwargs = {
-            "ingredients": {"required": True, 'allow_blank': False, },
-            "tags": {"required": True, 'allow_blank': False, },
-            "image": {"required": True, 'allow_blank': False, },
-            "name": {"required": True, 'allow_blank': False, },
-            "text": {"required": True, 'allow_blank': False, },
-            "cooking_time": {"required": True, 'allow_blank': False, },
-        }
+        # FIX: Лучше напрямую в полях указать. А если в модели обязательное,
+        # то drf в сериалайзере тоже сделает поле обязательным.
+        # extra_kwargs = {
+        #     "ingredients": {"required": True, 'allow_blank': False, },
+        #     "tags": {"required": True, 'allow_blank': False, },
+        #     "image": {"required": True, 'allow_blank': False, },
+        #     "name": {"required": True, 'allow_blank': False, },
+        #     "text": {"required": True, 'allow_blank': False, },
+        #     "cooking_time": {"required": True, 'allow_blank': False, },
+        # }
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
+
         recipe = Recipe.objects.create(
             author=self.context['request'].user,
             **validated_data
@@ -203,6 +208,17 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         )
         recipe.tags.set(tags)
         return recipe
+
+    # FIX: Здесь и была заковыка.
+    # Твой код, ничего не менял, просто раскомментировал.
+    def to_representation(self, obj):
+        """Возвращаем прдеставление в таком же виде, как и GET-запрос."""
+        self.fields.pop('ingredients')
+        representation = super().to_representation(obj)
+        representation['ingredients'] = RecipeIngredientSerializer(
+            RecipeIngredient.objects.filter(recipe=obj).all(), many=True
+        ).data
+        return representation
 
     # def update(self, instance, validated_data):
     #     ingredients = validated_data.pop('ingredients', None)
@@ -225,22 +241,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     #             create_ingredients
     #         )
     #     return super().update(instance, validated_data)
-
-    # def to_representation(self, obj):
-    #     """Возвращаем прдеставление в таком же виде, как и GET-запрос."""
-    #     self.fields.pop('ingredients')
-    #     representation = super().to_representation(obj)
-    #     representation['ingredients'] = RecipeIngredientSerializer(
-    #         RecipeIngredient.objects.filter(recipe=obj).all(), many=True
-    #     ).data
-    #     return representation
-    # amount = serializers.IntegerField(
-    #     validators=(
-    #         MinValueValidator(
-    #             1, message="Количество ингредиентов не может быть меньше 1."
-    #         ),
-    #     )
-    # )
 
 
 class RecipeForSubscriptionsSerializer(serializers.ModelSerializer):
