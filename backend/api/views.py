@@ -1,13 +1,6 @@
-from django.conf import settings
-from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.serializers import SetPasswordSerializer
-from io import BytesIO
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -28,6 +21,14 @@ from .serializers import (
     TagSerializer,
     UserReadSerializer,
 )
+from .services import (
+    draw_pdf_file,
+    get_delete_method_remove_object,
+    get_post_method_add_object,
+    get_shopping_cart_ingredients,
+    PHRASE_FOR_FAVORITE,
+    PHRASE_FOR_SHOPPING_CART
+)
 from foodgram.settings import (
     URL_PATH_DOWNLOAD_SHOPPING_CART,
     URL_PATH_FAVORITE,
@@ -41,7 +42,6 @@ from recipes.models import (
     Favourite,
     Ingredient,
     Recipe,
-    RecipeIngredient,
     ShoppingCart,
     Subscriptions,
     Tag,
@@ -63,8 +63,8 @@ class TagViewSet(ReadOnlyModelViewSet):
 class IngredientViewSet(ReadOnlyModelViewSet):
     """
     Вьюсет для ингредиентов.
-    POST-запрос по id - добавление нового ингредиента.
-    DELETE-запрос по id - удаление выбранного ингредиента.
+    GET-запрос - получение ингредиентов.
+    GET-запрос по id - получение конкретного ингредиента.
     """
     serializer_class = IngredientSerializer
     queryset = Ingredient.objects.all()
@@ -216,41 +216,22 @@ class RecipeViewSet(ModelViewSet):
         favorited_recipe = Recipe.objects.filter(id=kwargs['pk']).first()
 
         if request.method == 'POST':
-            if not favorited_recipe:
-                return Response(
-                    {'message': 'Рецепт не существует!'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            serializer = RecipeFavoriteSerializer(
+            return get_post_method_add_object(
+                request,
                 favorited_recipe,
-                data=request.data,
-                context={"request": request}
+                RecipeFavoriteSerializer,
+                Favourite,
+                request.user,
             )
-            if serializer.is_valid(raise_exception=True):
-                Favourite.objects.create(
-                    user=request.user,
-                    recipe=favorited_recipe
-                )
-                serializer.save(user=request.user, recipe=favorited_recipe)
-                return Response(serializer.data,
-                                status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            favorited_recipe = get_object_or_404(
+            return get_delete_method_remove_object(
+                request,
                 Recipe,
-                pk=request.parser_context['kwargs'].get('pk')
+                Favourite,
+                request.user,
+                PHRASE_FOR_FAVORITE,
             )
-            favorites = Favourite.objects.filter(
-                user=request.user,
-                recipe=favorited_recipe
-            ).first()
-            if not favorites:
-                return Response(
-                    {"error": "Объекта в избранном не существует!"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            favorites.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True,
             methods=['POST', 'DELETE'],
@@ -265,41 +246,22 @@ class RecipeViewSet(ModelViewSet):
         shopping_cart_recipe = Recipe.objects.filter(id=kwargs['pk']).first()
 
         if request.method == 'POST':
-            if not shopping_cart_recipe:
-                return Response(
-                    {'message': 'Рецепт не существует!'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            serializer = RecipeShoppingCartSerializer(
+            return get_post_method_add_object(
+                request,
                 shopping_cart_recipe,
-                data=request.data,
-                context={"request": request}
+                RecipeShoppingCartSerializer,
+                ShoppingCart,
+                request.user,
             )
-            if serializer.is_valid(raise_exception=True):
-                ShoppingCart.objects.create(
-                    user=request.user,
-                    recipe=shopping_cart_recipe
-                )
-                serializer.save(user=request.user, recipe=shopping_cart_recipe)
-                return Response(serializer.data,
-                                status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            shopping_cart_recipe = get_object_or_404(
+            return get_delete_method_remove_object(
+                request,
                 Recipe,
-                pk=request.parser_context['kwargs'].get('pk')
+                ShoppingCart,
+                request.user,
+                PHRASE_FOR_SHOPPING_CART,
             )
-            shopping_cart = ShoppingCart.objects.filter(
-                user=request.user,
-                recipe=shopping_cart_recipe
-            ).first()
-            if not shopping_cart:
-                return Response(
-                    {"error": "Объекта в списке покупок не существует!"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            shopping_cart.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False,
             methods=['GET'],
@@ -310,64 +272,8 @@ class RecipeViewSet(ModelViewSet):
         """GET-запрос по download_shopping_cart - скачать список покупок."""
         user = User.objects.get(id=self.request.user.pk)
         if user.shopping_cart.exists():
-            user = request.user
-            user_shopping_cart = ShoppingCart.objects.filter(user=user)
-            unique_ingredients = RecipeIngredient.objects.filter(
-                recipe__in=user_shopping_cart.values('recipe')
-            ).values(
-                'ingredient__name', 'ingredient__measurement_unit'
-                ).annotate(
-                    total_quantity=Sum('amount')
-                    )
-
-            response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = (
-                'attachment; filename="shopping_cart.pdf"'
-            )
-
-            buffer = BytesIO()
-            p = canvas.Canvas(buffer)
-            p.setFillColorRGB(0.9, 0.9, 0.9)  # Устанавливаем серый цвет фона
-            p.rect(-1, 0, 600, 843, fill=1)  # Ставим размер рамки фона
-            p.setFillColorRGB(0, 0, 0)  # Делаем цвет текста - черным
-
-            pdfmetrics.registerFont(
-                TTFont(
-                    'Arial',
-                    str(settings.BASE_DIR / 'fonts/caviar-dreams.ttf')
-                )
-            )
-            p.setFont("Arial", 12)
-
-            y_position = 800
-            p.drawString(250, y_position, "Список покупок:")
-
-            y_position -= 20
-            for ingredient in unique_ingredients:
-                p.drawString(
-                    100,
-                    y_position,
-                    f"{ingredient['ingredient__name']} - "
-                    f"{ingredient['total_quantity']} "
-                    f"{ingredient['ingredient__measurement_unit']}"
-                )
-                y_position -= 20
-
-            p.line(100, y_position, 500, y_position)
-
-            y_position -= 20
-            p.drawString(260, y_position, "@foodgram")
-
-            p.showPage()
-            p.save()
-
-            pdf = buffer.getvalue()
-            buffer.close()
-
-            response.write(pdf)
-
-            return response
-
+            unique_ingredients = get_shopping_cart_ingredients(request.user)
+            return draw_pdf_file(unique_ingredients=unique_ingredients)
         return Response(
             {'message': 'Список покупок пользователя пуст!'},
             status=status.HTTP_404_NOT_FOUND

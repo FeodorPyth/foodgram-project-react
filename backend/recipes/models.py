@@ -1,45 +1,10 @@
+from colorfield.fields import ColorField
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from .constants import CHOICES_COLOR, DEFAULT_COLOR
 from foodgram.settings import AUTH_USER_MODEL
-
-BLACK = '#000000'
-SILVER = '#C0C0C0'
-GRAY = '#808080'
-WHITE = '#FFFFFF'
-MAROON = '#800000'
-RED = '#FF0000'
-PURPLE = '#800080'
-FUCHSIA = '#FF00FF'
-GREEN = '#008000'
-LIME = '#00FF00'
-OLIVE = '#808000'
-YELLOW = '#FFFF00'
-NAVY = '#000080'
-BLUE = '#0000FF'
-TEAL = '#008080'
-AQUA = '#00FFFF'
-
-
-CHOICES_COLOR = (
-    (BLACK, 'черный'),
-    (SILVER, 'серебристый'),
-    (GRAY, 'серый'),
-    (WHITE, 'белый'),
-    (MAROON, 'бордовый'),
-    (RED, 'красный'),
-    (PURPLE, 'фиолетовый'),
-    (FUCHSIA, 'фуксия'),
-    (GREEN, 'зеленый'),
-    (LIME, 'лаймовый'),
-    (OLIVE, 'оливковый'),
-    (YELLOW, 'желтый'),
-    (NAVY, 'темно-синий'),
-    (BLUE, 'синий'),
-    (TEAL, 'бирюзовый'),
-    (AQUA, 'аквамарин'),
-)
 
 
 class Recipe(models.Model):
@@ -128,7 +93,7 @@ class Tag(models.Model):
         null=False,
         verbose_name='Название тега',
     )
-    color = models.CharField(
+    color = ColorField(
         max_length=len(max(
             [value for name, value in dict(CHOICES_COLOR).items()], key=len
         )),
@@ -136,7 +101,7 @@ class Tag(models.Model):
         blank=False,
         null=False,
         choices=CHOICES_COLOR,
-        default=WHITE,
+        default=DEFAULT_COLOR,
         help_text='Выберите цвет тега.',
         verbose_name='Цветовой код тега',
     )

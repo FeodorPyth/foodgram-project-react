@@ -47,4 +47,5 @@ class RecipeViewSetFilter(FilterSet):
 
 
 class IngredientViewSetFilter(SearchFilter):
+    """Кастомная модель фильтрации полей при выводе ингредиентов."""
     search_param = 'name'
