@@ -117,7 +117,10 @@ class Recipe(models.Model):
 
 
 class Tag(models.Model):
-    """Модель тегов."""
+    """
+    Модель тегов.
+    Реализован предустановленный выбор цветов в формате hex.
+    """
     name = models.CharField(
         max_length=50,
         unique=True,
@@ -185,10 +188,16 @@ class Ingredient(models.Model):
 
 
 class RecipeIngredient(models.Model):
-    """Модель связи рецепта и ингредиентов (многие ко многим)."""
+    """Модель связи рецептов и ингредиентов (многие ко многим)."""
     amount = models.PositiveSmallIntegerField(
         blank=False,
         null=False,
+        validators=[
+            MinValueValidator(
+                1,
+                message='Количество ингредиентов должно быть больше одного'
+            ),
+        ],
         verbose_name='Количество ингредиентов',
     )
     ingredient = models.ForeignKey(
@@ -207,6 +216,12 @@ class RecipeIngredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент в рецепте'
         verbose_name_plural = 'Ингредиенты в рецепте'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('ingredient', 'recipe'),
+                name='unique_ingredients_recipe'
+            )
+        ]
 
     def __str__(self):
         return f'{self.ingredient} в {self.recipe}.'

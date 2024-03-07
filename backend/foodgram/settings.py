@@ -140,3 +140,5 @@ URL_PATH_SUBSCRIBE = 'subscribe'
 URL_PATH_FAVORITE = 'favorite'
 
 URL_PATH_SHOPPING_CART = 'shopping_cart'
+
+URL_PATH_DOWNLOAD_SHOPPING_CART = 'download_shopping_cart'
