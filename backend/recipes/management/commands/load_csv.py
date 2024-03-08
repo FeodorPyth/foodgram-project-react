@@ -5,10 +5,11 @@ from recipes.models import Ingredient
 
 
 class Command(BaseCommand):
+    """Обработчик загрузки csv-файлов в БД."""
     def handle(self, *args, **options):
-        with open('ingredients.csv', newline='') as csvfile:
+        with open('data/ingredients.csv', newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
-            next(reader, None)  # Пропускаем заголовок
+            next(reader, None)
 
             for row in reader:
                 name, measurement_unit = row
