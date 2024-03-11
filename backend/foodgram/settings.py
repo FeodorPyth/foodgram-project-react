@@ -11,7 +11,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECRET_KEY = os.getenv('SECRET_KEY', '12345')
 
 # DEBUG = bool(strtobool(os.getenv('DEBUG', 'False')))
-
 SECRET_KEY = 'django-insecure-$7n31w$lub4rl3vpr&n%a5%!gr$$63wb8of2_61_!a7r^6lc#o'
 
 DEBUG = True
