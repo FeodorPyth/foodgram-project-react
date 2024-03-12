@@ -4,19 +4,25 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from .constants import CHOICES_COLOR, DEFAULT_COLOR
-from foodgram.settings import AUTH_USER_MODEL
+from foodgram.settings import (
+    AUTH_USER_MODEL,
+    LENGTH_FOR_MEASUREMENT_UNIT,
+    LENGTH_FOR_NAME,
+    LENGTH_FOR_TAG_NAME_SLUG,
+    LENGTH_FOR_TEXT,
+)
 
 
 class Recipe(models.Model):
     """Модель рецептов."""
     name = models.CharField(
-        max_length=200,
+        max_length=LENGTH_FOR_NAME,
         blank=False,
         null=False,
         verbose_name='Название рецепта',
     )
     text = models.TextField(
-        max_length=1024,
+        max_length=LENGTH_FOR_TEXT,
         blank=False,
         null=False,
         verbose_name='Описание рецепта',
@@ -87,7 +93,7 @@ class Tag(models.Model):
     Реализован предустановленный выбор цветов в формате hex.
     """
     name = models.CharField(
-        max_length=50,
+        max_length=LENGTH_FOR_TAG_NAME_SLUG,
         unique=True,
         blank=False,
         null=False,
@@ -106,7 +112,7 @@ class Tag(models.Model):
         verbose_name='Цветовой код тега',
     )
     slug = models.SlugField(
-        max_length=50,
+        max_length=LENGTH_FOR_TAG_NAME_SLUG,
         unique=True,
         blank=False,
         null=False,
@@ -125,13 +131,13 @@ class Tag(models.Model):
 class Ingredient(models.Model):
     """Модель ингредиентов."""
     name = models.CharField(
-        max_length=50,
+        max_length=LENGTH_FOR_NAME,
         blank=False,
         null=False,
         verbose_name='Название ингредиента',
     )
     measurement_unit = models.CharField(
-        max_length=10,
+        max_length=LENGTH_FOR_MEASUREMENT_UNIT,
         blank=False,
         null=False,
         verbose_name='Единицы измерения',
