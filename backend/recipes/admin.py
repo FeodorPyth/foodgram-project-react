@@ -34,7 +34,7 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ('author__username', 'name', 'tags')
     search_fields = ('name',)
     filter_horizontal = ('tags',)
-    readonly_fields = ['count_favourite_recipes',]
+    readonly_fields = ['count_favourite_recipes', ]
 
     def image_tag(self, obj):
         if obj.image:
