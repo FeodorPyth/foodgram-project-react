@@ -4,12 +4,6 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from .services import (
-    add_tags_and_ingredients,
-    PHRASE_FOR_VALIDATE_FAVORITE,
-    PHRASE_FOR_VALIDATE_SHOPPING_CART,
-    validate_favorite_shopping_cart,
-)
 from recipes.models import (
     Favourite,
     Ingredient,
@@ -17,9 +11,15 @@ from recipes.models import (
     RecipeIngredient,
     ShoppingCart,
     Subscriptions,
-    Tag,
+    Tag
 )
 from users.models import User
+from .services import (
+    PHRASE_FOR_VALIDATE_FAVORITE,
+    PHRASE_FOR_VALIDATE_SHOPPING_CART,
+    add_tags_and_ingredients,
+    validate_favorite_shopping_cart
+)
 
 
 class TagSerializer(serializers.ModelSerializer):

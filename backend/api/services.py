@@ -1,8 +1,9 @@
+from io import BytesIO
+
 from django.conf import settings
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from io import BytesIO
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -69,9 +70,9 @@ def get_shopping_cart_ingredients(current_user):
         recipe__in=user_shopping_cart.values('recipe')
     ).values(
         'ingredient__name', 'ingredient__measurement_unit'
-        ).annotate(
-            total_quantity=Sum('amount')
-            )
+    ).annotate(
+        total_quantity=Sum('amount')
+    )
     return unique_ingredients
 
 

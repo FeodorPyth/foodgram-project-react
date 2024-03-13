@@ -22,12 +22,12 @@ from .serializers import (
     UserReadSerializer,
 )
 from .services import (
+    PHRASE_FOR_FAVORITE,
+    PHRASE_FOR_SHOPPING_CART,
     draw_pdf_file,
     get_delete_method_remove_object,
     get_post_method_add_object,
-    get_shopping_cart_ingredients,
-    PHRASE_FOR_FAVORITE,
-    PHRASE_FOR_SHOPPING_CART
+    get_shopping_cart_ingredients
 )
 from foodgram.settings import (
     URL_PATH_DOWNLOAD_SHOPPING_CART,
