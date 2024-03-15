@@ -7,6 +7,24 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
+from foodgram.constants import (
+    URL_PATH_DOWNLOAD_SHOPPING_CART,
+    URL_PATH_FAVORITE,
+    URL_PATH_NAME,
+    URL_PATH_PASSWORD,
+    URL_PATH_SHOPPING_CART,
+    URL_PATH_SUBSCRIBE,
+    URL_PATH_SUBSCRIPTIONS
+)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    ShoppingCart,
+    Subscriptions,
+    Tag
+)
+from users.models import User
 from .filters import IngredientViewSetFilter, RecipeViewSetFilter
 from .pagintation import CustomPagination
 from .permissions import IsOwnerOrAdminOrReadOnly
@@ -29,24 +47,6 @@ from .services import (
     get_post_method_add_object,
     get_shopping_cart_ingredients
 )
-from foodgram.settings import (
-    URL_PATH_DOWNLOAD_SHOPPING_CART,
-    URL_PATH_FAVORITE,
-    URL_PATH_NAME,
-    URL_PATH_PASSWORD,
-    URL_PATH_SHOPPING_CART,
-    URL_PATH_SUBSCRIBE,
-    URL_PATH_SUBSCRIPTIONS,
-)
-from recipes.models import (
-    Favourite,
-    Ingredient,
-    Recipe,
-    ShoppingCart,
-    Subscriptions,
-    Tag,
-)
-from users.models import User
 
 
 class TagViewSet(ReadOnlyModelViewSet):
@@ -142,44 +142,43 @@ class UserViewSet(ModelViewSet):
         return self.get_paginated_response(serializer.data)
 
     @action(detail=True,
-            methods=['POST', 'DELETE'],
+            methods=['POST'],
             url_path=URL_PATH_SUBSCRIBE,
             url_name=URL_PATH_SUBSCRIBE,
             permission_classes=(IsAuthenticated,))
     def subscribe(self, request, *args, **kwargs):
-        """
-        POST-запрос по id и subscribe - подписаться на пользователя.
-        POST-запрос по id и subscribe - отписаться от пользователя.
-        """
+        """POST-запрос по id и subscribe - подписаться на пользователя."""
         following_user = get_object_or_404(User, id=kwargs['pk'])
         recipes_limit = request.query_params.get('recipes_limit')
-
-        if request.method == 'POST':
-            serializer = SubscriptionsSerializer(
-                following_user,
-                data=request.data,
-                context={"request": request, "recipes_limit": recipes_limit}
-            )
-            if serializer.is_valid(raise_exception=True):
-                Subscriptions.objects.create(
-                    follower=request.user,
-                    following=following_user
-                )
-                serializer.save()
-                return Response(serializer.data,
-                                status=status.HTTP_201_CREATED)
-        if request.method == 'DELETE':
-            subscription = Subscriptions.objects.filter(
+        serializer = SubscriptionsSerializer(
+            following_user,
+            data=request.data,
+            context={"request": request, "recipes_limit": recipes_limit}
+        )
+        if serializer.is_valid(raise_exception=True):
+            Subscriptions.objects.create(
                 follower=request.user,
                 following=following_user
-            ).first()
-            if not subscription:
-                return Response(
-                    {"error": "Подписка не существует."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            )
+            serializer.save()
+            return Response(serializer.data,
+                            status=status.HTTP_201_CREATED)
+
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, *args, **kwargs):
+        """DELETE-запрос по id и subscribe - отписаться от пользователя."""
+        following_user = get_object_or_404(User, id=kwargs['pk'])
+        subscription = Subscriptions.objects.filter(
+            follower=request.user,
+            following=following_user
+        ).first()
+        if not subscription:
+            return Response(
+                {"error": "Подписка не существует."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        subscription.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RecipeViewSet(ModelViewSet):
@@ -204,64 +203,58 @@ class RecipeViewSet(ModelViewSet):
         return RecipeCreateSerializer
 
     @action(detail=True,
-            methods=['POST', 'DELETE'],
+            methods=['POST'],
             url_path=URL_PATH_FAVORITE,
             url_name=URL_PATH_FAVORITE,
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, *args, **kwargs):
-        """
-        POST-запрос по id и favorite - добавление рецепта в избранное.
-        DELETE-запрос по id и favorite - удаление рецепта из избранного.
-        """
+        """POST-запрос по id и favorite - добавление рецепта в избранное."""
         favorited_recipe = Recipe.objects.filter(id=kwargs['pk']).first()
+        return get_post_method_add_object(
+            request,
+            favorited_recipe,
+            RecipeFavoriteSerializer,
+            Favorite,
+            request.user,
+        )
 
-        if request.method == 'POST':
-            return get_post_method_add_object(
-                request,
-                favorited_recipe,
-                RecipeFavoriteSerializer,
-                Favourite,
-                request.user,
-            )
-
-        if request.method == 'DELETE':
-            return get_delete_method_remove_object(
-                request,
-                Recipe,
-                Favourite,
-                request.user,
-                PHRASE_FOR_FAVORITE,
-            )
+    @favorite.mapping.delete
+    def delete_favorite(self, request, *args, **kwargs):
+        """DELETE-запрос по id и favorite - удаление рецепта из избранного."""
+        return get_delete_method_remove_object(
+            request,
+            Recipe,
+            Favorite,
+            request.user,
+            PHRASE_FOR_FAVORITE,
+        )
 
     @action(detail=True,
-            methods=['POST', 'DELETE'],
+            methods=['POST'],
             url_path=URL_PATH_SHOPPING_CART,
             url_name=URL_PATH_SHOPPING_CART,
             permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, *args, **kwargs):
-        """
-        POST-запрос по id и shopping_cart - добавить рецепт в список покупок.
-        DELETE-запрос по id и shopping_cart - удалить рецепт из списка покупок.
-        """
+        """POST-запрос по id и shopping_cart - добавить рецепт в покупки."""
         shopping_cart_recipe = Recipe.objects.filter(id=kwargs['pk']).first()
+        return get_post_method_add_object(
+            request,
+            shopping_cart_recipe,
+            RecipeShoppingCartSerializer,
+            ShoppingCart,
+            request.user,
+        )
 
-        if request.method == 'POST':
-            return get_post_method_add_object(
-                request,
-                shopping_cart_recipe,
-                RecipeShoppingCartSerializer,
-                ShoppingCart,
-                request.user,
-            )
-
-        if request.method == 'DELETE':
-            return get_delete_method_remove_object(
-                request,
-                Recipe,
-                ShoppingCart,
-                request.user,
-                PHRASE_FOR_SHOPPING_CART,
-            )
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, *args, **kwargs):
+        """DELETE-запрос по id и shopping_cart - удалить рецепт из покупок."""
+        return get_delete_method_remove_object(
+            request,
+            Recipe,
+            ShoppingCart,
+            request.user,
+            PHRASE_FOR_SHOPPING_CART,
+        )
 
     @action(detail=False,
             methods=['GET'],
@@ -271,7 +264,7 @@ class RecipeViewSet(ModelViewSet):
     def download_shopping_cart(self, request, *args, **kwargs):
         """GET-запрос по download_shopping_cart - скачать список покупок."""
         user = User.objects.get(id=self.request.user.pk)
-        if user.shopping_cart.exists():
+        if user.shoppingcart_user.exists():
             unique_ingredients = get_shopping_cart_ingredients(request.user)
             return draw_pdf_file(unique_ingredients=unique_ingredients)
         return Response(

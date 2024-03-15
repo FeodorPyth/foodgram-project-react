@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from recipes.models import (
-    Favourite,
+    Favorite,
     Ingredient,
     Recipe,
     RecipeIngredient,
@@ -22,18 +22,50 @@ from .services import (
 )
 
 
+class BaseSerializer(serializers.ModelSerializer):
+    """Базовый сериализатор для сериализаторов избранного и списка покупок."""
+    id = serializers.PrimaryKeyRelatedField(
+        source='recipe',
+        read_only=True
+    )
+    name = serializers.StringRelatedField(
+        source='recipe.name',
+        read_only=True
+    )
+    image = Base64ImageField(
+        source='recipe.image',
+        read_only=True
+    )
+    cooking_time = serializers.IntegerField(
+        source='recipe.cooking_time',
+        read_only=True
+    )
+
+    class Meta:
+        abstract = True
+        fields = (
+            'id',
+            'name',
+            'image',
+            'cooking_time',
+        )
+
+    def validate(self, data):
+        raise NotImplementedError('Подклассы должны реализовать этот метод.')
+
+
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор для модели тегов на чтение данных."""
     class Meta:
         model = Tag
-        fields = ('id', 'name', 'color', 'slug')
+        fields = '__all__'
 
 
 class IngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для модели ингредиентов на чтение данных."""
     class Meta:
         model = Ingredient
-        fields = ('id', 'name', 'measurement_unit')
+        fields = '__all__'
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
@@ -156,7 +188,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         ]
 
     def get_is_favorited(self, obj):
-        return Favourite.objects.filter(recipe=obj).exists()
+        return Favorite.objects.filter(recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
         return ShoppingCart.objects.filter(recipe=obj).exists()
@@ -332,70 +364,28 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         return context
 
 
-class RecipeFavoriteSerializer(serializers.ModelSerializer):
+class RecipeFavoriteSerializer(BaseSerializer):
     """Сериализатор для записи и удаления данных для модели избранного."""
-    id = serializers.PrimaryKeyRelatedField(
-        source='recipe',
-        read_only=True,
-    )
-    name = serializers.StringRelatedField(
-        source='recipe.name',
-        read_only=True,
-    )
-    image = Base64ImageField(
-        source='recipe.image',
-        read_only=True,
-    )
-    cooking_time = serializers.IntegerField(
-        source='recipe.cooking_time',
-        read_only=True,
-    )
 
     class Meta:
-        model = Favourite
-        fields = (
-            'id',
-            'name',
-            'image',
-            'cooking_time',
-        )
+        model = Favorite
+        fields = BaseSerializer.Meta.fields
 
     def validate(self, data):
         return validate_favorite_shopping_cart(
             self,
             data,
-            Favourite,
+            Favorite,
             PHRASE_FOR_VALIDATE_FAVORITE
         )
 
 
-class RecipeShoppingCartSerializer(serializers.ModelSerializer):
+class RecipeShoppingCartSerializer(BaseSerializer):
     """Сериализатор для записи и удаления данных для модели списка покупок."""
-    id = serializers.PrimaryKeyRelatedField(
-        source='recipe',
-        read_only=True
-    )
-    name = serializers.StringRelatedField(
-        source='recipe.name',
-        read_only=True
-    )
-    image = Base64ImageField(
-        source='recipe.image',
-        read_only=True
-    )
-    cooking_time = serializers.IntegerField(
-        source='recipe.cooking_time',
-        read_only=True
-    )
 
     class Meta:
         model = ShoppingCart
-        fields = (
-            'id',
-            'name',
-            'image',
-            'cooking_time',
-        )
+        fields = BaseSerializer.Meta.fields
 
     def validate(self, data):
         return validate_favorite_shopping_cart(

@@ -128,25 +128,3 @@ REST_FRAMEWORK = {
 DJOSER = {
     'LOGIN_FIELD': 'email',
 }
-
-URL_PATH_NAME = 'me'
-
-URL_PATH_PASSWORD = 'set_password'
-
-URL_PATH_SUBSCRIPTIONS = 'subscriptions'
-
-URL_PATH_SUBSCRIBE = 'subscribe'
-
-URL_PATH_FAVORITE = 'favorite'
-
-URL_PATH_SHOPPING_CART = 'shopping_cart'
-
-URL_PATH_DOWNLOAD_SHOPPING_CART = 'download_shopping_cart'
-
-LENGTH_FOR_NAME = 200
-
-LENGTH_FOR_TEXT = 1024
-
-LENGTH_FOR_TAG_NAME_SLUG = 50
-
-LENGTH_FOR_MEASUREMENT_UNIT = 10

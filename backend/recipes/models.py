@@ -3,33 +3,47 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from .constants import CHOICES_COLOR, DEFAULT_COLOR
-from foodgram.settings import (
-    AUTH_USER_MODEL,
+from foodgram.constants import (
+    CHOICES_COLOR,
+    DEFAULT_COLOR,
     LENGTH_FOR_MEASUREMENT_UNIT,
     LENGTH_FOR_NAME,
     LENGTH_FOR_TAG_NAME_SLUG,
-    LENGTH_FOR_TEXT,
+    LENGTH_FOR_TEXT
 )
+from foodgram.settings import AUTH_USER_MODEL
+
+
+class BaseModel(models.Model):
+    """Базовая модель для моделей избранного и списка покупок."""
+    user = models.ForeignKey(
+        AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='%(class)s_user',
+        verbose_name='Пользователь',
+    )
+    recipe = models.ForeignKey(
+        'Recipe',
+        on_delete=models.CASCADE,
+        related_name='%(class)s_recipe',
+        verbose_name='Рецепт',
+    )
+
+    class Meta:
+        abstract = True
 
 
 class Recipe(models.Model):
     """Модель рецептов."""
     name = models.CharField(
         max_length=LENGTH_FOR_NAME,
-        blank=False,
-        null=False,
         verbose_name='Название рецепта',
     )
     text = models.TextField(
         max_length=LENGTH_FOR_TEXT,
-        blank=False,
-        null=False,
         verbose_name='Описание рецепта',
     )
     cooking_time = models.PositiveSmallIntegerField(
-        blank=False,
-        null=False,
         validators=[
             MinValueValidator(
                 1,
@@ -41,8 +55,6 @@ class Recipe(models.Model):
     )
     image = models.ImageField(
         upload_to='recipes/',
-        blank=False,
-        null=False,
         default=None,
         verbose_name='Картинка',
     )
@@ -54,20 +66,16 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        blank=False,
-        null=False,
         verbose_name='Автор рецепта',
     )
     tags = models.ManyToManyField(
         'Tag',
-        blank=False,
         verbose_name='Тег рецепта',
     )
     ingredients = models.ManyToManyField(
         'Ingredient',
         through='RecipeIngredient',
         through_fields=('recipe', 'ingredient'),
-        blank=False,
         verbose_name='Ингредиенты',
     )
 
@@ -95,8 +103,6 @@ class Tag(models.Model):
     name = models.CharField(
         max_length=LENGTH_FOR_TAG_NAME_SLUG,
         unique=True,
-        blank=False,
-        null=False,
         verbose_name='Название тега',
     )
     color = ColorField(
@@ -104,8 +110,6 @@ class Tag(models.Model):
             [value for name, value in dict(CHOICES_COLOR).items()], key=len
         )),
         unique=True,
-        blank=False,
-        null=False,
         choices=CHOICES_COLOR,
         default=DEFAULT_COLOR,
         help_text='Выберите цвет тега.',
@@ -114,8 +118,6 @@ class Tag(models.Model):
     slug = models.SlugField(
         max_length=LENGTH_FOR_TAG_NAME_SLUG,
         unique=True,
-        blank=False,
-        null=False,
         verbose_name='Слаг тега',
     )
 
@@ -132,14 +134,10 @@ class Ingredient(models.Model):
     """Модель ингредиентов."""
     name = models.CharField(
         max_length=LENGTH_FOR_NAME,
-        blank=False,
-        null=False,
         verbose_name='Название ингредиента',
     )
     measurement_unit = models.CharField(
         max_length=LENGTH_FOR_MEASUREMENT_UNIT,
-        blank=False,
-        null=False,
         verbose_name='Единицы измерения',
     )
 
@@ -161,8 +159,6 @@ class Ingredient(models.Model):
 class RecipeIngredient(models.Model):
     """Модель связи рецептов и ингредиентов (многие ко многим)."""
     amount = models.PositiveSmallIntegerField(
-        blank=False,
-        null=False,
         validators=[
             MinValueValidator(
                 1,
@@ -198,21 +194,8 @@ class RecipeIngredient(models.Model):
         return f'{self.ingredient} в {self.recipe}.'
 
 
-class Favourite(models.Model):
+class Favorite(BaseModel):
     """Модель избранных рецептов."""
-    user = models.ForeignKey(
-        AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='favorite_user',
-        verbose_name='Пользователь',
-    )
-    recipe = models.ForeignKey(
-        'Recipe',
-        on_delete=models.CASCADE,
-        related_name='favorite_recipe',
-        verbose_name='Рецепт',
-    )
-
     class Meta:
         verbose_name = 'Объект избранного'
         verbose_name_plural = 'Объекты избранного'
@@ -227,23 +210,11 @@ class Favourite(models.Model):
         return f'{self.recipe} в избранном у пользователя {self.user}.'
 
 
-class ShoppingCart(models.Model):
+class ShoppingCart(BaseModel):
     "Модель списка покупок."
-    user = models.ForeignKey(
-        AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        verbose_name='Пользователь',
-    )
-    recipe = models.ForeignKey(
-        'Recipe',
-        on_delete=models.CASCADE,
-        verbose_name='Рецепт',
-    )
-
     class Meta:
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
-        default_related_name = 'shopping_cart'
         constraints = [
             models.UniqueConstraint(
                 fields=('user', 'recipe'),

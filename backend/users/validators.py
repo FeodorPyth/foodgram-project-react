@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 
-from foodgram.settings import URL_PATH_NAME
+from foodgram.constants import URL_PATH_NAME
 
 
 def validate_username_me(value):

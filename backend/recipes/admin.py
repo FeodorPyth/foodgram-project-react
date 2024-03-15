@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.template.defaulttags import format_html
 
 from .models import (
-    Favourite,
+    Favorite,
     Ingredient,
     Recipe,
     RecipeIngredient,
@@ -24,6 +24,7 @@ class RecipeIngredientInline(admin.TabularInline):
     """Модель рецептов и ингредиентов для вставки в модель рецептов."""
     model = RecipeIngredient
     extra = 0
+    min_num = 1
 
 
 @admin.register(Recipe)
@@ -58,7 +59,7 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
     search_fields = ('recipe__name', 'ingredient__name')
 
 
-@admin.register(Favourite)
+@admin.register(Favorite)
 class FavouriteAdmin(admin.ModelAdmin):
     """Кастомный класс для регистрации модели избранного в админке."""
     list_display = ('user', 'recipe',)

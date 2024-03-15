@@ -27,11 +27,11 @@ def draw_pdf_file(unique_ingredients):
 
     pdfmetrics.registerFont(
         TTFont(
-            'Arial',
+            'Caviar-dreams',
             str(settings.BASE_DIR / 'fonts/caviar-dreams.ttf')
         )
     )
-    p.setFont("Arial", 12)
+    p.setFont("Caviar-dreams", 12)
 
     y_position = 800
     p.drawString(250, y_position, "Список покупок:")
