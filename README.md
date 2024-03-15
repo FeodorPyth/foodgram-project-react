@@ -131,6 +131,12 @@ sudo docker compose exec backend cp -r /app/static/. /backend_static/static
 sudo docker compose exec backend python manage.py load_csv
 ```
 
+Создать суперпользователя, вручную через админпанель добавить несколько тегов:
+
+```sh
+sudo docker compose exec backend python manage.py createsuperuser
+```
+
 ## Настройка Nginx на удаленном сервере:
 Открыть конфиг Nginx:
 
